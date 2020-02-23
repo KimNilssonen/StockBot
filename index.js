@@ -7,9 +7,11 @@ const config = require('../configs/StockBot/StockBotConfig.js');
 
 // Functions
 //const help = require('./functions/help.js');
-const searchStock = require ('./functions/searchStock.js');
+const stockRequests = require ('./functions/stockRequests.js');
 
-let mainChannel;
+const testingIsOn = true;
+let testServerId;
+let testServerGeneralChannelId;
 
 client.on('ready', () => {
     console.log(client.user.tag + ": I'm awake!");
@@ -22,37 +24,46 @@ client.on('ready', () => {
     })
 });
 
-client.on('message', (recievedMsg) => {
-    if (recievedMsg.author == client.user) { return; }
-    if (recievedMsg.content.includes(client.user.toString())) {
-        recievedMsg.channel.send("Message recieved: " + recievedMsg.content + 
-            " from: " + recievedMsg.author.toString())  
+client.on('message', (message) => {
+    if (message.author == client.user) { return; }
+    if (message.content.includes(client.user.toString())) {
+        message.channel.send("Message recieved: " + message.content + 
+            " from: " + message.author.toString())  
     }
-    if (recievedMsg.content.startsWith("!")) {
-        processCommand(recievedMsg);
+    if (testingIsOn) {
+        if (message.channel.id === testServerGeneralChannelId) {
+            if (message.content.startsWith("!")) {
+                processCommand(message);
+            }
+        } else {
+            console.log('Message was not sent from TestServer...');
+        }
+    } else {
+        if (message.content.startsWith("!")) {
+            processCommand(message);
+        }
     }
 })
 
-function processCommand(recievedMsg) {
-    let fullCommand = recievedMsg.content.substr(1).toLowerCase();
+processCommand = function(message) {
+    let fullCommand = message.content.substr(1).toLowerCase();
     let splitCommand = fullCommand.split(" ");
     let primaryCommand = splitCommand[0];
     let arguments = splitCommand.slice(1);
 
-    console.log("Command recieved: " + primaryCommand + ", from User:" + recievedMsg.author.toString());
+    console.log("Command recieved: " + primaryCommand + ", from User:" + message.author.toString());
     console.log(" - arguments: " + arguments)
 
     if(primaryCommand == "stock") {
         if(arguments.length == 0) {
-            recievedMsg.channel.send("You need to specify what company to look up (for example google).");
+            message.channel.send("You need to specify what company to look up (for example google).");
             return;
         }
-        searchStock.checkStock(arguments, recievedMsg);
+        stockRequests.checkStock(arguments, message);
     }
 }
 
 client.login(config.getToken()).then(() => {
-    mainChannel = client.channels.get(config.getChannelId());
-    console.log("Logged in to: " + mainChannel.name);
-    mainChannel.send("I'm awake!");
+    testServerGeneralChannelId = client.channels.get(config.getTestServerGeneralChannelId()).id;
+    testServerId = client.guilds.get(config.getTestServerId()).id;
 });
